@@ -2,7 +2,7 @@ break swtch
 continue
 p cpus[$tp]->proc->name
 delete 1
-break safestrcpy
+break exec
 continue
 finish
 p cpus[$tp]->proc->name
