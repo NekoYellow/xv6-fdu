@@ -81,3 +81,10 @@ uint64 sys_rename(void) {
   p->name[len] = '\0';
   return 0;
 }
+
+// set tracing a set of system calls.
+uint64 sys_trace(void) {
+  if(argint(0, &(myproc()->tracemask)) < 0)
+    return -1;
+  return 0;
+}
