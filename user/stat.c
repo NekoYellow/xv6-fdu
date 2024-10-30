@@ -68,17 +68,17 @@ int main(int argc, char *argv[]) {
 
     // 父进程等待所有子进程并获取调度统计
     for (int i = 0; i < n; i++) {
-        int runable_time, running_time, sleep_time;
+        int runnable_time, running_time, sleep_time;
 
-        //  wait_sched(int *runable_time, int *running_time, int *sleep_time);
-        int pid = wait_sched(&runable_time, &running_time, &sleep_time);  // 调用wait_sched获取统计信息
+        //  wait_sched(int *runnable_time, int *running_time, int *sleep_time);
+        int pid = wait_sched(&runnable_time, &running_time, &sleep_time);  // 调用wait_sched获取统计信息
 
         if (pid >= 0) {
             printf("PID: %d | Runnable Time: %d ticks | Running Time: %d ticks | Sleep Time: %d ticks\n",
-                   pid, runable_time, running_time, sleep_time);
+                   pid, runnable_time, running_time, sleep_time);
 
             total_run_time += running_time;
-            total_wait_time += runable_time;
+            total_wait_time += runnable_time;
             total_sleep_time += sleep_time;
         } else {
             printf("Error: wait_sched failed\n");

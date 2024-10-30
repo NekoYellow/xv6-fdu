@@ -101,7 +101,7 @@ found:
   p->pid = allocpid();
 
   p->created_time = ticks;
-  p->runable_time = 0;
+  p->runnable_time = 0;
   p->running_time = 0;
   p->sleep_time = 0;
 
@@ -672,8 +672,51 @@ uint64 get_unused_procs(void) {
 }
 
 // get the running time, sleeping time, runnable time when the child process returns 
-int wait_sched(int *runable_time, int *running_time, int *sleep_time) {
-  return 0;
+int wait_sched(int *runnable_time, int *running_time, int *sleep_time) {
+  struct proc *np;
+  int havekids, pid;
+  struct proc *p = myproc();
+
+  // hold p->lock for the whole time to avoid lost
+  // wakeups from a child's exit().
+  acquire(&p->lock);
+
+  for (;;) {
+    // Scan through table looking for exited children.
+    havekids = 0;
+    for (np = proc; np < &proc[NPROC]; np++) {
+      // this code uses np->parent without holding np->lock.
+      // acquiring the lock first would cause a deadlock,
+      // since np might be an ancestor, and we already hold p->lock.
+      if (np->parent == p) {
+        // np->parent can't change between the check and the acquire()
+        // because only the parent changes it, and we're the parent.
+        acquire(&np->lock);
+        havekids = 1;
+        if (np->state == ZOMBIE) {
+          // Found one.
+          pid = np->pid;
+          *runnable_time = p->runnable_time;
+          *running_time = p->running_time;
+          *sleep_time = p->sleep_time;
+          freeproc(np);
+          release(&np->lock);
+          release(&p->lock);
+          return pid;
+        }
+        release(&np->lock);
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if (!havekids || p->killed) {
+      release(&p->lock);
+      return -1;
+    }
+
+    // Wait for a child to exit.
+    sleep(p, &p->lock);  // DOC: wait-sleep
+  }
 }
 
 // UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE
@@ -685,7 +728,7 @@ int on_state_change(int cur_state, int nxt_state, struct proc *p) {
     p->start = now;
     break;
   case RUNNABLE: // assert (nxt_state is RUNNING or SLEEPING)
-    p->runable_time += now - p->start;
+    p->runnable_time += now - p->start;
     p->start = now;
     break;
   case RUNNING: // assert (nxt_state is RUNABLE or ZOMBIE)

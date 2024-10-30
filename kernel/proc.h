@@ -108,7 +108,7 @@ struct proc {
   uint64 created_time;         // creation time
   uint64 finish_time;          // finish time
   uint64 running_time;         // running time
-  uint64 runable_time;         // runnable time
+  uint64 runnable_time;         // runnable time
   uint64 sleep_time;           // sleeping time
   uint64 start;                // start time of a process state
   uint64 end;                  // end time of a process state
