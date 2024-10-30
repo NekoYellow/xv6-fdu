@@ -99,8 +99,11 @@ static struct proc *allocproc(void) {
 
 found:
   p->pid = allocpid();
-  
-  // TODO: add A LOT OF init here
+
+  p->created_time = ticks;
+  p->runable_time = 0;
+  p->running_time = 0;
+  p->sleep_time = 0;
 
   #ifdef PR
   p->priority = 2;
@@ -209,7 +212,7 @@ void userinit(void) {
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
-  // TODO: on state change
+  on_state_change(p->state, RUNNABLE, p);
   p->state = RUNNABLE;
 
   release(&p->lock);
@@ -270,7 +273,7 @@ int fork(void) {
 
   pid = np->pid;
 
-  // TODO: on state change
+  on_state_change(np->state, RUNNABLE, np);
   np->state = RUNNABLE;
 
   release(&np->lock);
@@ -355,7 +358,7 @@ void exit(int status) {
   // Parent might be sleeping in wait().
   wakeup1(original_parent);
 
-  // TODO: on state change
+  on_state_change(p->state, ZOMBIE, p);
 
   p->xstate = status;
   p->state = ZOMBIE;
@@ -441,7 +444,7 @@ void scheduler(void) {
     for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
-        // TODO: on state change
+
         on_state_change(p->state, RUNNING, p);
 
         // Switch to chosen process.  It is the process's job
@@ -502,8 +505,7 @@ void yield(void) {
   struct proc *p = myproc();
   acquire(&p->lock);
 
-  // TODO: on state change
-  
+  on_state_change(p->state, RUNNABLE, p);
   p->state = RUNNABLE;
   sched();
   release(&p->lock);
@@ -544,7 +546,7 @@ void sleep(void *chan, struct spinlock *lk) {
     release(lk);
   }
 
-  // TODO: on state change
+  on_state_change(p->state, SLEEPING, p);
 
   // Go to sleep.
   p->chan = chan;
@@ -570,8 +572,7 @@ void wakeup(void *chan) {
   for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
     if (p->state == SLEEPING && p->chan == chan) {
-      // TODO: on state change
-
+      on_state_change(p->state, RUNNABLE, p);
       p->state = RUNNABLE;
     }
     release(&p->lock);
@@ -598,8 +599,7 @@ int kill(int pid) {
     if (p->pid == pid) {
       p->killed = 1;
       if (p->state == SLEEPING) {
-        // TODO: on state change
-
+        on_state_change(p->state, RUNNABLE, p);
         // Wake process from sleep().
         p->state = RUNNABLE;
       }
@@ -660,29 +660,53 @@ void procdump(void) {
 
 // kernel/proc.c
 uint64 get_unused_procs(void) {
-    struct proc *p;
-    uint64 count = 0;
+  struct proc *p;
+  uint64 count = 0;
 
-    for (p = proc; p < &proc[NPROC]; p++) {
-        if (p->state == UNUSED) {
-            count++;
-        }
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state == UNUSED) {
+      count++;
     }
-    return count;
+  }
+  return count;
 }
 
 // get the running time, sleeping time, runnable time when the child process returns 
 int wait_sched(int *runable_time, int *running_time, int *sleep_time) {
-
+  return 0;
 }
 
 // UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE
 int on_state_change(int cur_state, int nxt_state, struct proc *p) {
-    
+  if (cur_state == nxt_state) return 0;
+  int now = ticks;
+  switch (cur_state) {
+  case UNUSED: // assert (nxt_state is RUNNABLE)
+    p->start = now;
+    break;
+  case RUNNABLE: // assert (nxt_state is RUNNING or SLEEPING)
+    p->runable_time += now - p->start;
+    p->start = now;
+    break;
+  case RUNNING: // assert (nxt_state is RUNABLE or ZOMBIE)
+    p->running_time += now - p->start;
+    p->start = now;
+    break;
+  case SLEEPING: // assert (nxt_state is RUNABLE)
+    p->sleep_time += now - p->start;
+    p->start = now;
+    break;
+  case ZOMBIE: // assert (nxt_state is UNUSED)
+    p->finish_time = now;
+    break;
+  default:
+    break;
+  }
+  return 0;
 }
 
 // set priority [0-3] to a given process [pid]
 // -1 means error, 0 means success
 int set_priority(int priority, int pid) {
-    
+  return 0;
 }
