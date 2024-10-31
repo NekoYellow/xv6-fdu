@@ -115,19 +115,20 @@ uint64 sys_sysinfo(void) {
 
 // 统计进程调度信息的系统调用
 uint64 sys_wait_sched(void) {
-  uint64 p0, p1, p2;
+  uint64 p0, p1, p2, ret;
   struct proc *p = myproc();
   int runnable_time, running_time, sleep_time;
+
   if (argaddr(0, &p0) < 0) return -1;
   if (argaddr(1, &p1) < 0) return -1;
   if (argaddr(2, &p2) < 0) return -1;
 
-  wait_sched(&runnable_time, &running_time, &sleep_time);
+  ret = wait_sched(&runnable_time, &running_time, &sleep_time);
   if (copyout(p->pagetable, p0, (char *)&runnable_time, sizeof(runnable_time)) < 0) return -1;
-  if (copyout(p->pagetable, p0, (char *)&running_time, sizeof(running_time)) < 0) return -1;
-  if (copyout(p->pagetable, p0, (char *)&sleep_time, sizeof(sleep_time)) < 0) return -1;
+  if (copyout(p->pagetable, p1, (char *)&running_time, sizeof(running_time)) < 0) return -1;
+  if (copyout(p->pagetable, p2, (char *)&sleep_time, sizeof(sleep_time)) < 0) return -1;
 
-  return 0;
+  return ret;
 }
 
 

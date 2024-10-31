@@ -21,6 +21,8 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[];  // trampoline.S
 
+extern uint ticks;
+
 // function interface
 int on_state_change(int cur_state, int nxt_state, struct proc *p);
 
@@ -696,9 +698,9 @@ int wait_sched(int *runnable_time, int *running_time, int *sleep_time) {
         if (np->state == ZOMBIE) {
           // Found one.
           pid = np->pid;
-          *runnable_time = p->runnable_time;
-          *running_time = p->running_time;
-          *sleep_time = p->sleep_time;
+          *runnable_time = np->runnable_time;
+          *running_time = np->running_time;
+          *sleep_time = np->sleep_time;
           freeproc(np);
           release(&np->lock);
           release(&p->lock);
@@ -722,29 +724,25 @@ int wait_sched(int *runnable_time, int *running_time, int *sleep_time) {
 // UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE
 int on_state_change(int cur_state, int nxt_state, struct proc *p) {
   if (cur_state == nxt_state) return 0;
-  int now = ticks;
   switch (cur_state) {
   case UNUSED: // assert (nxt_state is RUNNABLE)
-    p->start = now;
     break;
   case RUNNABLE: // assert (nxt_state is RUNNING or SLEEPING)
-    p->runnable_time += now - p->start;
-    p->start = now;
+    p->runnable_time += ticks - p->start;
     break;
-  case RUNNING: // assert (nxt_state is RUNABLE or ZOMBIE)
-    p->running_time += now - p->start;
-    p->start = now;
+  case RUNNING: // assert (nxt_state is RUNNABLE or ZOMBIE)
+    p->running_time += ticks - p->start;
     break;
-  case SLEEPING: // assert (nxt_state is RUNABLE)
-    p->sleep_time += now - p->start;
-    p->start = now;
+  case SLEEPING: // assert (nxt_state is RUNNABLE)
+    p->sleep_time += ticks - p->start;
     break;
   case ZOMBIE: // assert (nxt_state is UNUSED)
-    p->finish_time = now;
+    p->finish_time = ticks;
     break;
   default:
     break;
   }
+  p->start = ticks;
   return 0;
 }
 
