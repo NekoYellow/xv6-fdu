@@ -94,6 +94,7 @@ extern uint64 sys_rename(void);
 extern uint64 sys_trace(void);
 extern uint64 sys_sysinfo(void);
 extern uint64 sys_wait_sched(void);
+extern uint64 sys_set_priority(void);
 
 static uint64 (*syscalls[])(void) = {
     [SYS_fork] sys_fork,   [SYS_exit] sys_exit,     [SYS_wait] sys_wait,     [SYS_pipe] sys_pipe,
@@ -102,7 +103,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_sleep] sys_sleep, [SYS_uptime] sys_uptime, [SYS_open] sys_open,     [SYS_write] sys_write,
     [SYS_mknod] sys_mknod, [SYS_unlink] sys_unlink, [SYS_link] sys_link,     [SYS_mkdir] sys_mkdir,
     [SYS_close] sys_close, [SYS_rename] sys_rename, [SYS_trace] sys_trace,   [SYS_sysinfo] sys_sysinfo,
-    [SYS_wait_sched] sys_wait_sched,
+    [SYS_wait_sched] sys_wait_sched, [SYS_set_priority] sys_set_priority,
 };
 
 char *syscallnames[] = {
@@ -131,6 +132,7 @@ char *syscallnames[] = {
   [SYS_trace]   "trace",
   [SYS_sysinfo] "sysinfo",
   [SYS_wait_sched] "wait_sched",
+  [SYS_set_priority] "set_priority",
 };
 
 void syscall(void) {

@@ -465,12 +465,33 @@ void scheduler(void) {
       release(&p->lock);
     }
     #elif defined PR
-    // Priority scheduling, iterating over max_p to find process with highest priority
+    // Priority scheduling, iterating over p to find process with highest priority
 
     // First find the process with the highest priority and is RUNNABLE
+    struct proc *mx = 0;
+    for (p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if (p->state == RUNNABLE) {
+        if (mx == 0 || p->priority > mx->priority)
+          mx = p;
+      }
+      release(&p->lock);
+    }
     
-    
-    // If found such max_p, copy to p, and run it.
+    // If found such mx, run it.
+    if (mx != 0) {
+      acquire(&mx->lock);
+      if (mx->state == RUNNABLE) {
+        on_state_change(mx->state, RUNNING, mx);
+        mx->state = RUNNING;
+        c->proc = mx;
+        swtch(&c->context, &mx->context);
+        
+        c->proc = 0;
+        found = 1;
+      }
+      release(&mx->lock);
+    }
     
     #endif
     // The same as Round-Robin, if no RUNNABLE process is found, we will wait for interrupt
@@ -749,5 +770,22 @@ int on_state_change(int cur_state, int nxt_state, struct proc *p) {
 // set priority [0-3] to a given process [pid]
 // -1 means error, 0 means success
 int set_priority(int priority, int pid) {
-  return 0;
+  struct proc *p;
+
+  if (priority < 0 || priority > 3) {
+    return -1;
+  }
+  
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->pid == pid) {
+      p->priority = priority;
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+
+  // not found
+  return -1;
 }
