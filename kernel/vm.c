@@ -5,6 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -113,7 +115,7 @@ uint64 kvmpa(uint64 va) {
   pte_t *pte;
   uint64 pa;
 
-  pte = walk(kernel_pagetable, va, 0);
+  pte = walk(myproc()->k_pagetable, va, 0);
   if (pte == 0) panic("kvmpa");
   if ((*pte & PTE_V) == 0) panic("kvmpa");
   pa = PTE2PA(*pte);
@@ -185,6 +187,18 @@ void uvminit(pagetable_t pagetable, uchar *src, uint sz) {
   memmove(mem, src, sz);
 }
 
+void p_kvminit(pagetable_t pagetable, uint64 va, uint64 pa) {
+  if (pagetable == 0) return;
+  mappages(pagetable, UART0, PGSIZE, UART0, PTE_R | PTE_W);
+  mappages(pagetable, VIRTIO0, PGSIZE, VIRTIO0, PTE_R | PTE_W);
+  mappages(pagetable, CLINT, 0x10000, CLINT, PTE_R | PTE_W);
+  mappages(pagetable, PLIC, 0x400000, PLIC, PTE_R | PTE_W);
+  mappages(pagetable, KERNBASE, (uint64)etext - KERNBASE, KERNBASE, PTE_R | PTE_X);
+  mappages(pagetable, (uint64)etext, PHYSTOP - (uint64)etext, (uint64)etext, PTE_R | PTE_W);
+  mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X);
+  mappages(pagetable, va, PGSIZE, pa, PTE_R | PTE_W);
+}
+
 // Allocate PTEs and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) {
@@ -248,6 +262,17 @@ void freewalk(pagetable_t pagetable) {
 void uvmfree(pagetable_t pagetable, uint64 sz) {
   if (sz > 0) uvmunmap(pagetable, 0, PGROUNDUP(sz) / PGSIZE, 1);
   freewalk(pagetable);
+}
+
+void p_kvmfree(pagetable_t pagetable, uint64 kstack) {
+  if (kstack) uvmunmap(pagetable, kstack, 1, 1);
+  uvmunmap(pagetable, UART0, 1, 0);
+  uvmunmap(pagetable, VIRTIO0, 1, 0);
+  uvmunmap(pagetable, CLINT, 0x10000 / PGSIZE, 0);
+  uvmunmap(pagetable, PLIC, 0x400000 / PGSIZE, 0);
+  uvmunmap(pagetable, KERNBASE, (PHYSTOP - KERNBASE) / PGSIZE, 0);
+  uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+  uvmfree(pagetable, 0);
 }
 
 // Given a parent process's page table, copy
