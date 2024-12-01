@@ -335,6 +335,25 @@ sys_open(void)
     }
   }
 
+  if(ip->type == T_SYMLINK && !(omode & O_NOFOLLOW)){
+    for(int cnt = 0; ip->type == T_SYMLINK; cnt++){
+      if(cnt >= 10){ // cycle
+        iunlockput(ip);
+        end_op();
+        return -1;
+      }
+      if(readi(ip, 0, (uint64)path, ip->size - MAXPATH, MAXPATH) != MAXPATH){
+        panic("open symlink");
+      }
+      iunlockput(ip);
+      if((ip=namei(path)) == 0){ // target file not found
+        end_op();
+        return -1;
+      }
+      ilock(ip);
+    }
+  }
+
   if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
     iunlockput(ip);
     end_op();
@@ -501,5 +520,28 @@ sys_pipe(void)
     fileclose(wf);
     return -1;
   }
+  return 0;
+}
+
+uint64
+sys_symlink(void)
+{
+  char target[MAXPATH], path[MAXPATH];
+  struct inode *ip;
+  if(argstr(0, target, MAXPATH) < 0 || argstr(1, path, MAXPATH) < 0){
+    return -1;
+  }
+  begin_op();
+  if((ip = namei(path)) == 0){ // the path inode doesn't exist yet
+    ip = create(path, T_SYMLINK, 0, 0);
+    iunlock(ip);
+  }
+  ilock(ip);
+  // write the target into the path inode
+  if(writei(ip, 0, (uint64)target, ip->size, MAXPATH) != MAXPATH){
+    panic("symlink");
+  }
+  iunlockput(ip);
+  end_op();
   return 0;
 }
