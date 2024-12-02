@@ -732,12 +732,15 @@ procdump(void)
 int
 getuid(int pid)
 {
-  int i;
+  struct proc *p;
 
-  for(i = 0; i < NPROC; i++){
-    if(proc[i].pid == pid){
-      return proc[i].uid;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      release(&p->lock);
+      return p->uid;
     }
+    release(&p->lock);
   }
 
   return -1;
@@ -747,13 +750,16 @@ getuid(int pid)
 int
 setuid(int pid, int uid)
 {
-  int i;
+  struct proc *p;
 
-  for(i = 0; i < NPROC; i++){
-    if(proc[i].pid == pid){
-      proc[i].uid = uid;
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      p->uid = uid;
+      release(&p->lock);
       return 0;
     }
+    release(&p->lock);
   }
 
   return -1;
