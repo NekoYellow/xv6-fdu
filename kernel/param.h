@@ -20,3 +20,4 @@
 #define HASH_P 97   // param for hashing
 #define MAXENVK 32  // maximum environ var name
 #define MAXENVV 128 // maximum environ var value
+#define ENVPATH "PATH" // environment variable PATH

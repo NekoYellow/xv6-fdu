@@ -271,7 +271,7 @@ userinit(void)
   p->state = RUNNABLE;
 
   // path env
-  insenv(p, "PATH", "/");
+  insenv(p, ENVPATH, "/");
 
   release(&p->lock);
 }
