@@ -4,12 +4,17 @@
 #include <string.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <sys/stat.h>
+#define dirent std_dirent
+#include <dirent.h>
+#undef dirent
 
 #define stat xv6_stat  // avoid clash with host struct stat
 #include "kernel/types.h"
 #include "kernel/fs.h"
 #include "kernel/stat.h"
 #include "kernel/param.h"
+#undef stat
 
 #ifndef static_assert
 #define static_assert(a, b) do { switch (0) case 0: case (a): ; } while (0)
@@ -63,6 +68,65 @@ xint(uint x)
   a[2] = x >> 16;
   a[3] = x >> 24;
   return y;
+}
+
+void dfs(char *path, uint ino)
+{
+  // printf("%s\n", path);
+  DIR *dir = opendir(path);
+  if(!dir)
+    die(path);
+
+  assert(strlen(path) <= DIRSIZ);
+
+  struct dirent de;
+  struct std_dirent *dp;
+  struct stat sb;
+  int i, fd, isdir, cc;
+  uint jno;
+  char fullpath[BSIZE], buf[BSIZE];
+
+  strncpy(fullpath, path, DIRSIZ);
+  i = strlen(fullpath);
+  fullpath[i++] = '/';
+
+  while((dp = readdir(dir))){
+    // printf(" %s\n", dp->d_name);
+    if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+      continue;
+
+    strncpy(fullpath+i, dp->d_name, strlen(dp->d_name));
+    fullpath[i + strlen(dp->d_name)] = '\0';
+
+    if((fd = open(fullpath, 0)) < 0)
+      die(fullpath);
+
+    if(fstat(fd, &sb) < 0)
+      die(fullpath);
+    isdir = S_ISDIR(sb.st_mode);
+
+    jno = ialloc(isdir ? T_DIR : T_FILE);
+    bzero(&de, sizeof(de));
+    de.inum = xshort(jno);
+    strncpy(de.name, dp->d_name, DIRSIZ);
+    iappend(ino, &de, sizeof(de));
+    while((cc = read(fd, buf, sizeof(buf))) > 0)
+      iappend(jno, buf, cc);
+
+    if(isdir){
+      bzero(&de, sizeof(de));
+      de.inum = xshort(jno);
+      strcpy(de.name, ".");
+      iappend(jno, &de, sizeof(de));
+
+      bzero(&de, sizeof(de));
+      de.inum = xshort(ino);
+      strcpy(de.name, "..");
+      iappend(jno, &de, sizeof(de));
+
+      dfs(fullpath, jno);
+    }
+  }
 }
 
 int
@@ -128,6 +192,39 @@ main(int argc, char *argv[])
   iappend(rootino, &de, sizeof(de));
 
   for(i = 2; i < argc; i++){
+    if((fd = open(argv[i], 0)) < 0)
+      die(argv[i]);
+
+    // handle dir
+    struct stat sb;
+    if(fstat(fd, &sb) < 0)
+      die(argv[i]);
+    
+    if(S_ISDIR(sb.st_mode)){
+      printf("DIR: %s\n", argv[i]);
+      inum = ialloc(T_DIR);
+      bzero(&de, sizeof(de));
+      de.inum = xshort(inum);
+      strncpy(de.name, argv[i], DIRSIZ);
+      iappend(rootino, &de, sizeof(de));
+      while((cc = read(fd, buf, sizeof(buf))) > 0)
+        iappend(inum, buf, cc);
+      
+      bzero(&de, sizeof(de));
+      de.inum = xshort(inum);
+      strcpy(de.name, ".");
+      iappend(inum, &de, sizeof(de));
+
+      bzero(&de, sizeof(de));
+      de.inum = xshort(rootino);
+      strcpy(de.name, "..");
+      iappend(inum, &de, sizeof(de));
+
+      dfs(argv[i], inum);
+      close(fd);
+      continue;
+    }
+
     // get rid of "user/"
     char *shortname;
     if(strncmp(argv[i], "user/", 5) == 0)
@@ -136,9 +233,6 @@ main(int argc, char *argv[])
       shortname = argv[i];
     
     assert(index(shortname, '/') == 0);
-
-    if((fd = open(argv[i], 0)) < 0)
-      die(argv[i]);
 
     // Skip leading _ in name when writing to file system.
     // The binaries are named _rm, _cat, etc. to keep the
