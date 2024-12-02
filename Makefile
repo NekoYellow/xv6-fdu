@@ -144,6 +144,7 @@ UPROGS=\
 	$U/_su\
 	$U/_exit\
 	$U/_uidtest\
+	$U/_set\
 
 fs.img: mkfs/mkfs README.md home $(UPROGS)
 	mkfs/mkfs fs.img README.md home $(UPROGS)
