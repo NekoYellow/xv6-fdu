@@ -91,3 +91,35 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// get uid of specified process.
+uint64
+sys_getuid(void)
+{
+  int pid;
+
+  argint(0, &pid);
+  return getuid(pid);
+}
+
+// set uid of specified process, as long as
+// the password offered is correct.
+uint64
+sys_setuid(void)
+{
+  int pid, uid;
+  char buf[MAXPWD], tar[MAXPWD];
+
+  argint(0, &pid);
+  argint(1, &uid);
+  if(argstr(2, buf, MAXPWD) < 0)
+    return -1;
+
+  strncpy(tar, PWD, MAXPWD);
+  if(strncmp(buf, tar, MAXPWD) != 0)
+    return -1;
+
+  if(setuid(pid, uid) < 0)
+    return -1;
+  return 0;
+}

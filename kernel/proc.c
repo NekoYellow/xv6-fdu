@@ -124,6 +124,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->uid = CU;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -236,7 +237,9 @@ userinit(void)
 
   p = allocproc();
   initproc = p;
-  
+
+  // p->uid = SU; // This specifies the uid of sh process
+
   // allocate one user page and copy initcode's instructions
   // and data into it.
   uvmfirst(p->pagetable, initcode, sizeof(initcode));
@@ -311,6 +314,9 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+
+  // user id is inherited.
+  np->uid = p->uid;
 
   release(&np->lock);
 
@@ -692,4 +698,34 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// Get the uid of specified process.
+int
+getuid(int pid)
+{
+  int i;
+
+  for(i = 0; i < NPROC; i++){
+    if(proc[i].pid == pid){
+      return proc[i].uid;
+    }
+  }
+
+  return -1;
+}
+
+// Set uid of specified process.
+int setuid(int pid, int uid)
+{
+  int i;
+
+  for(i = 0; i < NPROC; i++){
+    if(proc[i].pid == pid){
+      proc[i].uid = uid;
+      return 0;
+    }
+  }
+
+  return -1;
 }

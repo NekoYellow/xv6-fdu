@@ -12,4 +12,7 @@
 #define FSSIZE       2000  // size of file system in blocks
 #define MAXPATH      128   // maximum file path name
 #define USERSTACK    1     // user stack pages
-
+#define SU 0 // Superuser role
+#define CU 1 // Common user role
+#define MAXPWD 16 // maximum password length
+#define PWD "xv6su" // demo password
