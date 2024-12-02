@@ -39,3 +39,6 @@ entry("uptime");
 entry("symlink");
 entry("getuid");
 entry("setuid");
+entry("getenv");
+entry("setenv");
+entry("env");

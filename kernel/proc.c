@@ -18,6 +18,8 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void freeproc(struct proc *p);
 
+void insenv(struct proc *p, char *key, char *val);
+
 extern char trampoline[]; // trampoline.S
 
 // helps ensure that wakeups of wait()ing
@@ -147,6 +149,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // Initiate hash table
+  for(int i = 0; i < HASH_P; i++){
+    p->env[i] = 0;
+  }
+
   return p;
 }
 
@@ -170,6 +177,15 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  // free hash table
+  for(int i = 0; i < HASH_P; i++){
+    struct envent *ee = p->env[i];
+    while(ee){
+      struct envent *cur = ee;
+      ee = ee->nxt;
+      kfree((void *)cur);
+    }
+  }
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -254,6 +270,9 @@ userinit(void)
 
   p->state = RUNNABLE;
 
+  // path env
+  insenv(p, "PATH", "/");
+
   release(&p->lock);
 }
 
@@ -317,6 +336,15 @@ fork(void)
 
   // user id is inherited.
   np->uid = p->uid;
+
+  // environ is inherited.
+  for(int i = 0; i < HASH_P; i++){
+    if(p->env[i] == 0)
+      continue;
+    for(struct envent *ee = p->env[i]; ee; ee = ee->nxt){
+      insenv(np, ee->key, ee->val);
+    }
+  }
 
   release(&np->lock);
 
@@ -716,7 +744,8 @@ getuid(int pid)
 }
 
 // Set uid of specified process.
-int setuid(int pid, int uid)
+int
+setuid(int pid, int uid)
 {
   int i;
 
@@ -728,4 +757,91 @@ int setuid(int pid, int uid)
   }
 
   return -1;
+}
+
+// Get value associated with key in env in proc pid.
+char*
+getenv(int pid, char *key)
+{
+  struct proc *p;
+  struct envent *ee;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      for(ee = p->env[hash(key)]; ee; ee = ee->nxt){
+        if(strncmp(ee->key, key, strlen(key)) == 0){
+          release(&p->lock);
+          return ee->val;
+        }
+      }
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+  return 0;
+}
+
+// Insert a (key, val) pair into env of p.
+void
+insenv(struct proc *p, char *key, char *val)
+{
+  struct envent *ee;
+  int idx = hash(key);
+
+  // prepend a new entry
+  ee = (struct envent *)kalloc();
+  if(!ee)
+    panic("kalloc failed");
+  safestrcpy(ee->key, key, strlen(key)+1);
+  safestrcpy(ee->val, val, strlen(val)+1);
+  // printf("ins %s %s %d\n", ee->key, ee->val, idx);
+  ee->nxt = p->env[idx];
+  p->env[idx] = ee;
+}
+
+// Set value associated with key to val in env of proc pid.
+int
+setenv(int pid, char *key, char *val)
+{
+  struct proc *p = myproc();
+  struct envent *ee;
+  int idx = hash(key);
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      for(ee = p->env[idx]; ee; ee = ee->nxt){
+        if(strncmp(ee->key, key, strlen(key)) == 0){ // key already exist
+          safestrcpy(ee->val, val, strlen(val)+1);
+          release(&p->lock);
+          return 1;
+        }
+      }
+      insenv(p, key, val);
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+  return 0;
+}
+
+// Print an environment variable listing
+// of this process to console.
+void
+envdump()
+{
+  struct proc *p = myproc();
+  struct envent *ee;
+  int i;
+
+  for(i = 0; i < HASH_P; i++){
+    if(p->env[i] == 0)
+      continue;
+    for(ee = p->env[i]; ee; ee = ee->nxt){
+      printf("%s=%s\n", ee->key, ee->val);
+    }
+  }
 }

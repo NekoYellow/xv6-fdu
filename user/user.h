@@ -25,6 +25,9 @@ int uptime(void);
 int symlink(char*, char*);
 int getuid(int);
 int setuid(int, int, char*);
+int getenv(int, char*, char*);
+int setenv(int, char*, char*);
+int env(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

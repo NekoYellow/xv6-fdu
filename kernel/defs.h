@@ -108,6 +108,9 @@ int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
 int             getuid(int);
 int             setuid(int, int);
+char*           getenv(int, char*);
+int             setenv(int, char*, char*);
+void            envdump(void);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -134,6 +137,7 @@ char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
+int             hash(const char*);
 
 // syscall.c
 void            argint(int, int*);

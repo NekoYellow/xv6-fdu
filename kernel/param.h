@@ -14,5 +14,9 @@
 #define USERSTACK    1     // user stack pages
 #define SU 0 // Superuser role
 #define CU 1 // Common user role
-#define MAXPWD 16 // maximum password length
+#define MAXPWD 16   // maximum password length
 #define PWD "xv6su" // demo password
+#define HASH_B 233  // param for hashing
+#define HASH_P 97   // param for hashing
+#define MAXENVK 32  // maximum environ var name
+#define MAXENVV 128 // maximum environ var value

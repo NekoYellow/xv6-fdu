@@ -81,6 +81,12 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+// Environmental variable entry
+struct envent {
+  char key[MAXENVK], val[MAXENVV];
+  struct envent *nxt;
+};
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -104,5 +110,6 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   int uid;                     // User ID
+  struct envent *env[HASH_P];  // Environ hashmap
   char name[16];               // Process name (debugging)
 };

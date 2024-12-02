@@ -123,3 +123,54 @@ sys_setuid(void)
     return -1;
   return 0;
 }
+
+// get env value associated with given key
+// in the current process.
+uint64
+sys_getenv(void)
+{
+  int pid;
+  char key[MAXENVK], *val;
+  uint64 dst;
+
+  argint(0, &pid);
+  if(argstr(1, key, MAXENVK) < 0)
+    return -1;
+  argaddr(2, &dst);
+
+  if((val = getenv(pid, key)) == 0)
+    return 0;
+
+  if(copyout(myproc()->pagetable, dst, val, MAXENVV) < 0)
+    return -1;
+  return 0;
+}
+
+// set env value associated with given key
+// in the current process.
+uint64
+sys_setenv(void)
+{
+  int pid;
+  char key[MAXENVK], val[MAXENVV];
+
+  argint(0, &pid);
+
+  if(argstr(1, key, MAXENVK) < 0)
+    return -1;
+
+  if(argstr(2, val, MAXENVV) < 0)
+    return -1;
+
+  if(setenv(pid, key, val) < 0)
+    return -1;
+  return 0;
+}
+
+// list environment variables.
+uint64
+sys_env(void)
+{
+  envdump();
+  return 0;
+}

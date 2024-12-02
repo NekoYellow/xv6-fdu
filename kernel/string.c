@@ -1,4 +1,5 @@
 #include "types.h"
+#include "param.h"
 
 void*
 memset(void *dst, int c, uint n)
@@ -105,3 +106,12 @@ strlen(const char *s)
   return n;
 }
 
+int
+hash(const char *s)
+{
+  int ret = 0, i;
+
+  for(i = 0; s[i]; i++)
+    ret = (ret*HASH_B + s[i]) % HASH_P;
+  return ret;
+}
