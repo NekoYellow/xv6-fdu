@@ -140,6 +140,10 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_whoami\
+	$U/_su\
+	$U/_exit\
+	$U/_uidtest\
 
 fs.img: mkfs/mkfs README.md home $(UPROGS)
 	mkfs/mkfs fs.img README.md home $(UPROGS)

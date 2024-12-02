@@ -23,6 +23,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int symlink(char*, char*);
+int getuid(int);
+int setuid(int, int, char*);
 
 // ulib.c
 int stat(const char*, struct stat*);
