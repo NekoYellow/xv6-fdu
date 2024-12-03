@@ -136,7 +136,7 @@ sys_link(void)
   }
 
   ilock(ip);
-  if(ip->type == T_DIR){
+  if(ip->type == T_DIR && myproc()->uid != SU){
     iunlockput(ip);
     end_op();
     return -1;
