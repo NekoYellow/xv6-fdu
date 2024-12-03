@@ -57,8 +57,9 @@ void panic(char*);
 struct cmd *parsecmd(char*);
 void runcmd(struct cmd*) __attribute__((noreturn));
 
-char buf[MAXPATH]; // executable location
+char buf[1000];
 
+// find executable in locations of PATH
 void
 findexec(char *name)
 {
@@ -97,6 +98,29 @@ findexec(char *name)
     i = j+1;
   }
   // not found
+}
+
+// evaluate token $NAME if NAME is an environment variable
+void
+evaltoken(char **q, char **eq)
+{
+  char *val, *p;
+  int i;
+
+  if(**q != '$')
+    return;
+
+  for(i = 0, p = *q; p != *eq; p++, i++)
+    buf[i] = *p;
+  buf[i] = '\0';
+
+  val = (char *)malloc(MAXENVV);
+  memset(val, 0, sizeof(val));
+  if(getenv(getpid(), buf+1, val) < 0)
+    exit(1);
+
+  if(*val != 0)
+    *q = val, *eq = val+strlen(val);
 }
 
 // Execute cmd.  Never returns.
@@ -480,6 +504,7 @@ parseexec(char **ps, char *es)
       break;
     if(tok != 'a')
       panic("syntax");
+    evaltoken(&q, &eq);
     cmd->argv[argc] = q;
     cmd->eargv[argc] = eq;
     argc++;
