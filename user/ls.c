@@ -27,7 +27,7 @@ void
 ls(char *path)
 {
   char buf[512], *p;
-  int fd;
+  int fd, fd2;
   struct dirent de;
   struct stat st;
 
@@ -65,10 +65,17 @@ ls(char *path)
         continue;
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
-      if(stat(buf, &st) < 0){
-        printf("ls: cannot stat %s\n", buf);
+      if((fd2 = open(buf, O_RDONLY | O_NOFOLLOW)) < 0){
+        printf("ls: cannot open %s\n", buf);
+        close(fd2);
         continue;
       }
+      if(fstat(fd2, &st) < 0){
+        printf("ls: cannot stat %s\n", buf);
+        close(fd2);
+        continue;
+      }
+      close(fd2);
       printf("%s %d\t%d\t%d\t%d\n", fmtname(buf), st.type, st.ino, st.nlink, (int) st.size);
     }
     break;
