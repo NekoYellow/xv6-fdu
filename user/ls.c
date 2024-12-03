@@ -42,10 +42,14 @@ ls(char *path)
     return;
   }
 
+  memset(buf, ' ', DIRSIZ-4);
+  buf[DIRSIZ-4] = '\0';
+  printf("FILE%s TYPE\tINODE\tNLINK\tSIZE\n", buf);
+
   switch(st.type){
   case T_DEVICE:
   case T_FILE:
-    printf("%s %d %d %d\n", fmtname(path), st.type, st.ino, (int) st.size);
+    printf("%s %d\t%d\t%d\t%d\n", fmtname(path), st.type, st.ino, st.nlink, (int) st.size);
     break;
 
   case T_DIR:
@@ -65,7 +69,7 @@ ls(char *path)
         printf("ls: cannot stat %s\n", buf);
         continue;
       }
-      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, (int) st.size);
+      printf("%s %d\t%d\t%d\t%d\n", fmtname(buf), st.type, st.ino, st.nlink, (int) st.size);
     }
     break;
   }
