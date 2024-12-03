@@ -22,11 +22,11 @@ int flags2perm(int flags)
 int
 exec(char *path, char **argv)
 {
-  char *s, *last, buf[MAXPATH];
-  int i, j, off, len;
+  char *s, *last;
+  int i, off;
   uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
   struct elfhdr elf;
-  struct inode *ip, *dip;
+  struct inode *ip;
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
@@ -34,30 +34,8 @@ exec(char *path, char **argv)
   begin_op();
 
   if((ip = namei(path)) == 0){
-    s = getenv(p->pid, ENVPATH);
-    len = strlen(s);
-    int found = 0;
-    for(i = 0, j = 0; j < len; j++){
-      while(j < len && s[j] != ':')
-        j++;
-      s[j] = '\0';
-      if((dip = namei(s+i)) != 0){
-        if((ip = dirlookup(dip, path, 0)) != 0){
-          safestrcpy(buf, s+i, j-i+1);
-          safestrcpy(buf+j-i, path, strlen(path)+1);
-          safestrcpy(path, buf, strlen(buf)+1);
-          // printf("%s\n", path);
-          found = 1;
-          break;
-        }
-      }
-      i = j+1;
-    }
-    if (!found){
-      printf("%s not found\n", path);
-      end_op();
-      return -1;
-    }
+    end_op();
+    return -1;
   }
   ilock(ip);
 

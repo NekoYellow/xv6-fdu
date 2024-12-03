@@ -3,7 +3,9 @@
 #include "kernel/types.h"
 #include "user/user.h"
 #include "kernel/fcntl.h"
-#include "Kernel/param.h"
+#include "kernel/param.h"
+#include "kernel/stat.h"
+#include "kernel/fs.h"
 
 // Parsed command representation
 #define EXEC  1
@@ -55,6 +57,48 @@ void panic(char*);
 struct cmd *parsecmd(char*);
 void runcmd(struct cmd*) __attribute__((noreturn));
 
+char buf[MAXPATH]; // executable location
+
+void
+findexec(char *name)
+{
+  char s[MAXENVV];
+  int i, j, len, fd;
+  struct stat sb;
+  struct dirent de;
+
+  strcpy(buf, name);
+
+  if(open(name, O_RDONLY) >= 0)
+    return;
+
+  getenv(getpid(), ENVPATH, s);
+  len = strlen(s);
+
+  for(i = 0, j = 0; j < len; j++){
+    while(j < len && s[j] != ':')
+      j++;
+    s[j] = '\0';
+    if((fd = open(s+i, O_RDONLY)) >= 0){
+      if(fstat(fd, &sb) < 0)
+        exit(1);
+      if(sb.type != T_DIR)
+        continue;
+      while(read(fd, &de, sizeof(de)) == sizeof(de)){
+        if(de.inum == 0)
+          continue;
+        if(strcmp(de.name, name) == 0){
+          strcpy(buf, s+i);
+          strcpy(buf+strlen(s+i), name);
+          return;
+        }
+      }
+    }
+    i = j+1;
+  }
+  // not found
+}
+
 // Execute cmd.  Never returns.
 void
 runcmd(struct cmd *cmd)
@@ -77,7 +121,8 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit(1);
-    exec(ecmd->argv[0], ecmd->argv);
+    findexec(ecmd->argv[0]);
+    exec(buf, ecmd->argv);
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
