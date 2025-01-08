@@ -1,8 +1,6 @@
 The main branch is a project for the [CSCC](https://os.educg.net/#/index?TYPE=OS_HDN), and the other branches are xv6 labs.
 
 
-# OS原理赛道
-
 This project is based on [xv6](https://github.com/mit-pdos/xv6-riscv)
 
 BUILDING AND RUNNING XV6
@@ -12,9 +10,13 @@ https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
 riscv64-softmmu.  Once they are installed, and in your shell
 search path, you can run "make qemu".
 
-在对xv6的学习中，我们注意到xv6出于简洁性的要求在许多方面的实现都是非常基础的，因此本项目对xv6进行了扩展，实现了一些现代操作系统中常见的用户功能。
 
-我们扩展的内容可以用作教学实验，使学生在实践中熟悉xv6的架构，以及更好地理解操作系统的文件、进程等概念。
+# OS原理赛道
+
+本项目对xv6进行了扩展，实现了一些现代操作系统中常见的用户功能。
+
+我们的工作可以设计成一到两个教学实验，服务于仅以了解为目的学习操作系统的学生。
+
 
 ## 1. 符号链接支持
 
