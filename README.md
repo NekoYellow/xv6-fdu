@@ -1,3 +1,6 @@
+The main branch is a project for the [CSCC](https://os.educg.net/#/index?TYPE=OS_HDN), and the other branches are xv6 labs.
+
+
 # OS原理赛道
 
 This project is based on [xv6](https://github.com/mit-pdos/xv6-riscv)
