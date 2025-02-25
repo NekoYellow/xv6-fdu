@@ -1,5 +1,7 @@
 The main branch is a project for the [CSCC](https://os.educg.net/#/index?TYPE=OS_HDN), and the other branches are xv6 labs.
 
+Upd: Our project won the [third prize](https://os.educg.net/#/index?TYPE=OS_HDN)
+
 
 This project is based on [xv6](https://github.com/mit-pdos/xv6-riscv)
 
