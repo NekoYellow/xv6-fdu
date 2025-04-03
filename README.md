@@ -1,4 +1,4 @@
-The main branch is a project for the [CSCC](https://os.educg.net/#/index?TYPE=OS_HDN), and the other branches are xv6 labs.
+The main branch is a project for the [CSCC](https://os.educg.net/?token=ZyHqEXqhg2L14ujAFptlfEbwGbzqw4yt3RDR23JfKH#/oldDetail?name=2024年全国大学生计算机系统能力大赛-操作系统设计赛%28华东区域赛%29-OS原理), and the other branches are xv6 labs.
 
 Upd: Our project won the [third prize](https://os.educg.net/#/index?TYPE=OS_HDN)
 
